@@ -739,6 +739,13 @@ OutputIt random_alpha_digit(OutputIt first, OutputIt last, Generator &gen) {
   return first;
 }
 
+// Fills random bytes to the range [|first|, |last|).
+template <typename OutputIt, typename Generator>
+void random_bytes(OutputIt first, OutputIt last, Generator &gen) {
+  std::uniform_int_distribution<> dis(0, 255);
+  std::generate(first, last, [&dis, &gen]() { return dis(gen); });
+}
+
 template <typename OutputIterator, typename CharT, size_t N>
 OutputIterator copy_lit(OutputIterator it, CharT (&s)[N]) {
   return std::copy_n(s, N - 1, it);

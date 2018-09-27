@@ -479,6 +479,8 @@ public:
   // field, returns 0.
   uint32_t get_affinity_cookie_to_send() const;
 
+  void set_ws_key(const StringRef &key);
+
   enum {
     EVENT_ERROR = 0x1,
     EVENT_TIMEOUT = 0x2,
@@ -517,6 +519,10 @@ private:
   DefaultMemchunks blocked_request_buf_;
   DefaultMemchunks request_buf_;
   DefaultMemchunks response_buf_;
+
+  // The Sec-WebSocket-Key field sent to the peer.  This field is used
+  // if frontend uses RFC 8441 WebSocket bootstrapping via HTTP/2.
+  StringRef ws_key_;
 
   ev_timer upstream_rtimer_;
   ev_timer upstream_wtimer_;

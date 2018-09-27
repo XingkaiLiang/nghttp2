@@ -1854,6 +1854,21 @@ bool contains_trailers(const StringRef &s) {
   }
 }
 
+StringRef make_websocket_accept_token(uint8_t *dest, const StringRef &key) {
+  static constexpr uint8_t ws_magic[] = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+  std::array<uint8_t, base64::encode_length(16) + str_size(ws_magic)> s;
+  auto p = std::copy(std::begin(key), std::end(key), std::begin(s));
+  std::copy_n(ws_magic, str_size(ws_magic), p);
+
+  std::array<uint8_t, 20> h;
+  if (util::sha1(h.data(), StringRef{std::begin(s), std::end(s)}) != 0) {
+    return StringRef{};
+  }
+
+  auto end = base64::encode(std::begin(h), std::end(h), dest);
+  return StringRef{dest, end};
+}
+
 } // namespace http2
 
 } // namespace nghttp2

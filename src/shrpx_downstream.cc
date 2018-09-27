@@ -782,8 +782,17 @@ void Downstream::check_upgrade_fulfilled_http2() {
 void Downstream::check_upgrade_fulfilled_http1() {
   if (req_.method == HTTP_CONNECT) {
     if (req_.connect_proto == CONNECT_PROTO_WEBSOCKET) {
-      // TODO check existence of Sec-WebSocket-Accept header field.
-      upgraded_ = resp_.http_status == 101;
+      // This is done for HTTP/2 frontend only.
+      auto accept = resp_.fs.header(http2::HD_SEC_WEBSOCKET_ACCEPT);
+      if (!accept) {
+        return;
+      }
+
+      std::array<uint8_t, base64::encode_length(20)> accept_buf;
+      auto expected =
+          http2::make_websocket_accept_token(accept_buf.data(), ws_key_);
+
+      upgraded_ = resp_.http_status == 101 && expected == accept->value;
     } else {
       upgraded_ = 200 <= resp_.http_status && resp_.http_status < 300;
     }
@@ -1132,5 +1141,7 @@ DefaultMemchunks *Downstream::get_blocked_request_buf() {
 bool Downstream::get_blocked_request_data_eof() const {
   return blocked_request_data_eof_;
 }
+
+void Downstream::set_ws_key(const StringRef &key) { ws_key_ = key; }
 
 } // namespace shrpx

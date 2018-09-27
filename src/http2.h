@@ -41,6 +41,7 @@
 #include "memchunk.h"
 #include "template.h"
 #include "allocator.h"
+#include "base64.h"
 
 namespace nghttp2 {
 
@@ -425,6 +426,11 @@ StringRef copy_lower(BlockAllocator &balloc, const StringRef &src);
 
 // Returns true if te header field value |s| contains "trailers".
 bool contains_trailers(const StringRef &s);
+
+// Creates Sec-WebSocket-Accept value for |key|.  The capacity of
+// buffer pointed by |dest| must have at least 24 bytes (base64
+// encoded length of 16 bytes data).
+StringRef make_websocket_accept_token(uint8_t *dest, const StringRef &key);
 
 } // namespace http2
 

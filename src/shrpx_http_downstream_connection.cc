@@ -566,12 +566,23 @@ int HttpDownstreamConnection::push_request_headers() {
     buf->append("Transfer-Encoding: chunked\r\n");
   }
 
-  if (req.http_major == 2) {
-    if (req.connect_proto == CONNECT_PROTO_WEBSOCKET) {
-      buf->append("Upgrade: websocket\r\nConnection: Upgrade\r\n");
-      // TODO Generate Sec-WebSocket-Key
-      buf->append("Sec-Websocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n");
+  if (req.connect_proto == CONNECT_PROTO_WEBSOCKET) {
+    if (req.http_major == 2) {
+      std::array<uint8_t, 16> nonce;
+      util::random_bytes(std::begin(nonce), std::end(nonce),
+                         worker_->get_randgen());
+      auto iov = make_byte_ref(balloc, base64::encode_length(nonce.size()) + 1);
+      auto p = base64::encode(std::begin(nonce), std::end(nonce), iov.base);
+      *p = '\0';
+      auto key = StringRef{iov.base, p};
+      downstream_->set_ws_key(key);
+
+      buf->append("Sec-Websocket-Key: ");
+      buf->append(key);
+      buf->append("\r\n");
     }
+
+    buf->append("Upgrade: websocket\r\nConnection: Upgrade\r\n");
   } else if (!connect_method && req.upgrade_request) {
     auto connection = req.fs.header(http2::HD_CONNECTION);
     if (connection) {
